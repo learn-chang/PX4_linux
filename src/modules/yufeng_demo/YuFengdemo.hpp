@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2023 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2013-2020 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,67 +32,58 @@
  ****************************************************************************/
 
 /**
- * @file zenoh_publisher.cpp
- *
- * Zenoh publisher
- *
- * @author Peter van der Perk <peter.vanderperk@nxp.com>
+ * Multicopter position controller.
  */
 
-#include "zenoh_publisher.hpp"
+#pragma once
 
+#include "PositionControl/PositionControl.hpp"
+#include "Takeoff/Takeoff.hpp"
+#include "GotoControl/GotoControl.hpp"
 
-Zenoh_Publisher::Zenoh_Publisher(bool rostopic)
+#include <drivers/drv_hrt.h>
+#include <lib/controllib/blocks.hpp>
+#include <lib/perf/perf_counter.h>
+#include <lib/slew_rate/SlewRateYaw.hpp>
+#include <lib/systemlib/mavlink_log.h>
+#include <px4_platform_common/px4_config.h>
+#include <px4_platform_common/defines.h>
+#include <px4_platform_common/module.h>
+#include <px4_platform_common/module_params.h>
+#include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
+#include <px4_platform_common/posix.h>
+#include <px4_platform_common/tasks.h>
+#include <uORB/Publication.hpp>
+#include <uORB/Subscription.hpp>
+#include <uORB/SubscriptionCallback.hpp>
+#include <uORB/topics/hover_thrust_estimate.h>
+#include <uORB/topics/parameter_update.h>
+#include <uORB/topics/trajectory_setpoint.h>
+#include <uORB/topics/vehicle_attitude_setpoint.h>
+#include <uORB/topics/vehicle_constraints.h>
+#include <uORB/topics/vehicle_control_mode.h>
+#include <uORB/topics/vehicle_land_detected.h>
+#include <uORB/topics/vehicle_local_position.h>
+#include <uORB/topics/vehicle_local_position_setpoint.h>
+
+using namespace time_literals;
+
+class MulticopterPositionControl : public ModuleBase<MulticopterPositionControl>, public control::SuperBlock,
+	public ModuleParams, public px4::ScheduledWorkItem
 {
-	this->_rostopic = rostopic;
-	this->_topic[0] = 0x0;
-}
+public:
+	MulticopterPositionControl();
+	~MulticopterPositionControl() override;
 
-Zenoh_Publisher::~Zenoh_Publisher()
-{
-	undeclare_publisher();
-}
+	/** @see ModuleBase */
+	static int task_spawn(int argc, char *argv[]);
 
-int Zenoh_Publisher::undeclare_publisher()
-{
-	z_undeclare_publisher(z_publisher_move(&_pub));
-	return 0;
-}
 
-int Zenoh_Publisher::declare_publisher(z_session_t s, const char *keyexpr)
-{
-	if (_rostopic) {
-		strncpy(this->_topic, (char *)_rt_prefix, _rt_prefix_offset);
 
-		if (keyexpr[0] == '/') {
-			strncpy(this->_topic + _rt_prefix_offset, keyexpr + 1, sizeof(this->_topic) - _rt_prefix_offset);
+	bool init();
 
-		} else {
-			strncpy(this->_topic + _rt_prefix_offset, keyexpr, sizeof(this->_topic) - _rt_prefix_offset);
-		}
+private:
+	void Run() override;
 
-	} else {
-		strncpy(this->_topic, keyexpr, sizeof(this->_topic));
-	}
 
-	_pub = z_declare_publisher(s, z_keyexpr(this->_topic), NULL);
-
-	if (!z_publisher_check(&_pub)) {
-		printf("Unable to declare publisher for key expression!\n");
-		return -1;
-	}
-
-	return 0;
-}
-
-int8_t Zenoh_Publisher::publish(const uint8_t *buf, int size)
-{
-	z_publisher_put_options_t options = z_publisher_put_options_default();
-	options.encoding = z_encoding(Z_ENCODING_PREFIX_APP_CUSTOM, NULL);
-	return z_publisher_put(z_publisher_loan(&_pub), buf, size, &options);
-}
-
-void Zenoh_Publisher::print()
-{
-	printf("Topic: %s\n", this->_topic);
-}
+};

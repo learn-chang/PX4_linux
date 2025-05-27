@@ -1,6 +1,6 @@
 ############################################################################
 #
-#   Copyright (c) 2023 PX4 Development Team. All rights reserved.
+#   Copyright (c) 2015-2020 PX4 Development Team. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -31,71 +31,18 @@
 #
 ############################################################################
 
-function(message)
-    if (NOT MESSAGE_QUIET)
-        _message(${ARGN})
-    endif()
-endfunction()
-
-set(POSIX_COMPATIBLE YES)
-set(BUILD_SHARED_LIBS OFF)
-set(BUILD_TESTING OFF)
-set(CHECK_THREADS NO)
-set(MESSAGE_QUIET ON)
-set(ZENOH_DEBUG ${CONFIG_ZENOH_DEBUG})
-
-px4_add_git_submodule(TARGET git_zenoh-pico PATH "zenoh-pico")
-add_subdirectory(zenoh-pico)
-unset(MESSAGE_QUIET)
-add_dependencies(zenohpico git_zenoh-pico px4_platform)
-target_compile_options(zenohpico PUBLIC -Wno-cast-align
-			-Wno-narrowing
-			-Wno-stringop-overflow
-			-Wno-stringop-truncation
-			-Wno-unused-result
-			-DZ_BATCH_SIZE_RX=512
-			-DZ_BATCH_SIZE_TX=512
-			-DZ_FRAG_MAX_SIZE=1024)
-
-if(CONFIG_PLATFORM_NUTTX)
-    target_compile_options(zenohpico PRIVATE -DUNIX_NO_MULTICAST_IF)
-endif()
-
-if(CONFIG_ZENOH_SERIAL)
-    target_compile_options(zenohpico PRIVATE -DZ_LINK_SERIAL)
-endif()
-
 
 px4_add_module(
-		MODULE modules__zenoh
-		MAIN zenoh
-		SRCS
-		zenoh.cpp
-		zenoh_config.cpp
-		zenoh.h
-		publishers/zenoh_publisher.cpp
-		subscribers/zenoh_subscriber.cpp
-		MODULE_CONFIG
-			module.yaml
-		DEPENDS
-			cdr
-			uorb_msgs
-			px4_work_queue
-			zenohpico
-			zenoh_topics
-			git_zenoh-pico
-		INCLUDES
-			${PX4_BINARY_DIR}/msg
-			zenoh-pico/include
-			${CMAKE_CURRENT_LIST_DIR}
-			${PX4_BINARY_DIR}/src/modules/zenoh/
-		COMPILE_FLAGS
-			-Wno-pointer-compare
-			-Wno-cast-align
-			-Wno-address-of-packed-member
-			-Wno-double-promotion
-			-Wno-unused
-			-DZENOH_LINUX
-			-DZENOH_NO_STDATOMIC
-			-D_Bool=int8_t
-)
+	#MODULE modules__mc_pos_control
+	MODULE modules__yufeng_demo
+	#MAIN mc_pos_control
+	MAIN yufeng_demo
+	COMPILE_FLAGS
+	SRCS
+		YuFengDemo.cpp
+		YuFengDemo.hpp
+	DEPENDS
+		controllib
+		geo
+		SlewRate
+	)
