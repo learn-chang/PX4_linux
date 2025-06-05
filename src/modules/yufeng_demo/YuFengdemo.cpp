@@ -75,6 +75,7 @@ void YuFengDemo::parameters_update(bool force)
 	// {
 
 	// }
+	nihao;
 
 }
 

@@ -31,3 +31,11 @@
  *
  ****************************************************************************/
 
+// Roll gains
+/**
+ * Roll proportional gain
+ *
+ * @group UUV Attitude Control
+ * @decimal 2
+ */
+PARAM_DEFINE_FLOAT(UUV_ROLL_P, 4.0f);
